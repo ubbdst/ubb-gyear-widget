@@ -1,10 +1,8 @@
 *.class
 run
-release
-/target/
-.classpath
-.project
-/nbproject/
-/dist/
-/build/
+release/
+target/
+nbproject/
+dist/
+build/
 build.xml

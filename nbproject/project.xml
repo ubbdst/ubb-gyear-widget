@@ -8,7 +8,9 @@
                 <root id="src.dir"/>
                 <root id="docs.dir"/>
             </source-roots>
-            <test-roots/>
+            <test-roots>
+                <root id="test.Test%20Packages.dir"/>
+            </test-roots>
         </data>
     </configuration>
 </project>
