@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import javax.swing.SwingConstants;
 import javax.swing.JOptionPane;
 import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 
@@ -49,28 +50,50 @@ public class UBBgYearWidget extends NumberFieldWidget{
          to create a fake date based on the input year, then parse it to 
          GregorianCalendar. If the process fail, then that means the year was not valid.
         */
-       private boolean isValidGYear(String yearString){
-          boolean isValid = true;
+       private String getValidGYear(String yearString){
+          String xmlGYear;
+          
             try {
-                  int year = Integer.parseInt(yearString);
+                  int inputYear = Integer.parseInt(yearString);
                   XMLGregorianCalendar gCalendar = DatatypeFactory
                           .newInstance()
-                          .newXMLGregorianCalendarDate(year , 1, 1, 0);
+                          .newXMLGregorianCalendarDate(
+                                  inputYear,
+                                  DatatypeConstants.FIELD_UNDEFINED, 
+                                  DatatypeConstants.FIELD_UNDEFINED, 
+                                  DatatypeConstants.FIELD_UNDEFINED
+                          );
                   
-                  //String[] xmlGYear = gCalendar.toXMLFormat().trim().split("-");
-                  //System.out.println("gYear: " + xmlGYear[0];  
-                  //+ "\ngYear full format: " + gCalendar.toXMLFormat());
+                  
+                  String xmlDate = gCalendar.toXMLFormat();
+                  
+                  //xmlDate will be in the form of 2020-01-01Z or -0160-01-01Z
+                  String [] dateToken = xmlDate.split("-");
+                  
+                  xmlGYear = dateToken[0];
+                  
+                  /**
+                   * This deals with a situation when a date is preceded by "-" e.g -0160-01-01Z
+                   * Note that -0160 is a valid gYear. (160 BC)
+                  **/
+                  if(dateToken[0].isEmpty()){
+                      
+                        xmlGYear = "-" + dateToken[1];
+                  }
+                  
+                  //validGYear = Integer.parseInt(xmlGYear);
+                  System.out.println("gYear: " + gCalendar.getYear() + "\ngYear full format: " + gCalendar.toXMLFormat());
 
                 } 
             catch (DatatypeConfigurationException ex) {
                   logger.log(Level.SEVERE, ex.getLocalizedMessage());
-                  isValid = false;
+                  xmlGYear = ""; 
             }
             catch(NumberFormatException nfe){
                  logger.log(Level.SEVERE, "gYear must be a number: {0}", nfe.getLocalizedMessage());
-                 isValid = false;
+                 xmlGYear = "";
          }
-          return isValid;
+          return xmlGYear;
        }
 
    /*
@@ -80,10 +103,11 @@ public class UBBgYearWidget extends NumberFieldWidget{
    */ 
       @Override
       public Collection getValues() {
-         //Get the current value displayed in the widget
+         //Get the current input value
          String currentSlotValue = getText();
+         String gYear = getValidGYear(currentSlotValue);
          
-             if(currentSlotValue != null && !isValidGYear(currentSlotValue)){  
+             if(gYear.isEmpty() && currentSlotValue != null){ 
                  
                  getTextField().setForeground(Color.RED);
                  //Display error message
@@ -94,10 +118,10 @@ public class UBBgYearWidget extends NumberFieldWidget{
                          JOptionPane.ERROR_MESSAGE);
                  
                  logger.log(Level.SEVERE, "Invalid input for gYear: {0}", currentSlotValue);
-                 currentSlotValue = null;
+                 gYear = null;
              }
              
-          return CollectionUtilities.createCollection(currentSlotValue);
+          return CollectionUtilities.createCollection(gYear);
       }
       
       //A Protege main methord to allow easy debuging

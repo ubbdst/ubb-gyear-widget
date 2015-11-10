@@ -1,6 +1,5 @@
 package edu.stanford.smi.protegex.widget.year.test;
 
-
 /**
  * @author Hemed
  */
@@ -24,13 +23,13 @@ public class UBBgYearTest  extends TestCase {
                     .newInstance();
  
             Method method = testObj.getClass()
-                    .getDeclaredMethod("isValidGYear" , String.class);
+                    .getDeclaredMethod("getValidGYear" , String.class);
             method.setAccessible(true);
             
-            assertTrue((Boolean)method.invoke(mockObject, "12004"));
-            assertEquals(false, method.invoke(mockObject , "2000-01"));
-            assertEquals(false, method.invoke(mockObject , "hemed"));
-            assertEquals(true, method.invoke(mockObject , "2023"));
+            //assertEquals("12004", method.invoke(mockObject, "1998"));
+            assertEquals("0099" , method.invoke(mockObject , "1002001"));
+            assertEquals("0100", method.invoke(mockObject , "10000000"));
+            assertEquals("-0203", method.invoke(mockObject , "-203"));
    
     }
     
