@@ -20,14 +20,19 @@ import javax.xml.datatype.XMLGregorianCalendar;
  * @version  1.0
  * @since   04-11-2015
  * <br />
- * A Slot Widget for validating gYear.
+ * A Protege Slot Widget plugin for validating xsd:gYear.
  */
 
 public class UBBgYearWidget extends NumberFieldWidget{
     
-  static final Logger logger = Logger.getLogger(UBBgYearWidget.class.getName());
+  private static final Logger logger = Logger.getLogger(UBBgYearWidget.class.getName());
+  private static final String INVALID_INPUT_MSG = "Invalid input";
+  private static final String LABEL_GYEAR_FORMAT = " (yyyy)";
+  private static final String INVALID_GYEAR_MSG = "Invalid value for gYear: ";
+
+    
   
-   //Initialize the widget
+   //Initialize widget
     @Override
         public void initialize() {
         super.initialize();
@@ -36,25 +41,49 @@ public class UBBgYearWidget extends NumberFieldWidget{
         setPreferredRows(1);
     }
         
-	public static boolean isSuitable(Cls cls, Slot slot, Facet facet) {
-            
-            //check if a slot accept values of type String, 
-           // if it does then show this widget in the dropdown list as one of the it's options.
-           boolean isInt = cls.getTemplateSlotValueType(slot) == ValueType.INTEGER;
-           
-           return true;
-	}
-        
+
+
+    @Override
+    public String getLabel() {
+        return super.getLabel().concat(LABEL_GYEAR_FORMAT); 
+    }
+    
+       /**
+       * Get text label in bold.
+       */
+      private String getBoldTextLabel(String inputString){
+        StringBuilder s = new StringBuilder();
+         s.append("<html>")
+                 .append("<strong>")
+                 .append(INVALID_GYEAR_MSG)
+                 .append(inputString)
+                 .append("</strong>")
+          .append("</html>");
+
+         return s.toString();
+      }
+
        /*
-         I haven't found an easy way to simply validate a gYear, instead I am trying
-         to create a fake date based on the input year, then parse it to 
-         GregorianCalendar. If the process fail, then that means the year was not valid.
+        * A method to validate xsd:gYear based on the input string. 
         */
        private String getValidGYear(String yearString){
           String xmlGYear;
-          
-            try {
-                  int inputYear = Integer.parseInt(yearString);
+            try {              
+                   int inputYear = Integer.parseInt(yearString);
+                   
+                  /**
+                   * Input year should be at most 4 digits number.
+                   * Note: I had to make sure about this because 
+                   * if input year is greater than 4 digits, it will be truncated by toXMLFormat() method anyway.
+                  **/
+                   if(inputYear > 0 && String.valueOf(inputYear).length() > 4){
+                       return null;
+                   }
+                   //Negative gYear with of atmost 4 digits number is allowed. e.g -0160 for 160BC
+                   if(inputYear < 0 && String.valueOf(inputYear).length() > 5){
+                       return null;
+                   }
+                  
                   XMLGregorianCalendar gCalendar = DatatypeFactory
                           .newInstance()
                           .newXMLGregorianCalendarDate(
@@ -63,38 +92,28 @@ public class UBBgYearWidget extends NumberFieldWidget{
                                   DatatypeConstants.FIELD_UNDEFINED, 
                                   DatatypeConstants.FIELD_UNDEFINED
                           );
-                  
-                  
-                  String xmlDate = gCalendar.toXMLFormat();
-                  
-                  //xmlDate will be in the form of 2020-01-01Z or -0160-01-01Z
-                  String [] dateToken = xmlDate.split("-");
-                  
-                  xmlGYear = dateToken[0];
-                  
-                  /**
-                   * This deals with a situation when a date is preceded by "-" e.g -0160-01-01Z
-                   * Note that -0160 is a valid gYear. (160 BC)
-                  **/
-                  if(dateToken[0].isEmpty()){
-                      
-                        xmlGYear = "-" + dateToken[1];
-                  }
-                  
-                  //validGYear = Integer.parseInt(xmlGYear);
-                  System.out.println("gYear: " + gCalendar.getYear() + "\ngYear full format: " + gCalendar.toXMLFormat());
+                  xmlGYear = gCalendar.toXMLFormat();
+
+                   //System.out.println("gYear: " + gCalendar.getYear() 
+                  //+ "\ngYear full format: " + gCalendar.toXMLFormat());
 
                 } 
             catch (DatatypeConfigurationException ex) {
                   logger.log(Level.SEVERE, ex.getLocalizedMessage());
-                  xmlGYear = ""; 
+                  xmlGYear = null; 
             }
             catch(NumberFormatException nfe){
-                 logger.log(Level.SEVERE, "gYear must be a number: {0}", nfe.getLocalizedMessage());
-                 xmlGYear = "";
-         }
+                 logger.log(Level.SEVERE, "gYear must be a number: ", nfe.getLocalizedMessage());
+                 xmlGYear = null;
+          }
+           catch (IllegalArgumentException ie) {
+                  logger.log(Level.SEVERE, ie.getLocalizedMessage());
+                  xmlGYear = null; 
+            }
+           
           return xmlGYear;
        }
+       
 
    /*
     This method is called on the value change. 
@@ -107,22 +126,27 @@ public class UBBgYearWidget extends NumberFieldWidget{
          String currentSlotValue = getText();
          String gYear = getValidGYear(currentSlotValue);
          
-             if(gYear.isEmpty() && currentSlotValue != null){ 
+             if(gYear == null && currentSlotValue != null){ 
                  
                  getTextField().setForeground(Color.RED);
                  //Display error message
                  JOptionPane.showMessageDialog(
                           null, 
-                         "Invalid value for gYear: "  + currentSlotValue,
-                         "Invalid Input",
-                         JOptionPane.ERROR_MESSAGE);
+                         getBoldTextLabel(currentSlotValue),
+                         INVALID_INPUT_MSG,
+                         JOptionPane.ERROR_MESSAGE
+                  );
                  
-                 logger.log(Level.SEVERE, "Invalid input for gYear: {0}", currentSlotValue);
-                 gYear = null;
+                 logger.log(Level.SEVERE, "Invalid input for gYear: " + currentSlotValue);
              }
              
           return CollectionUtilities.createCollection(gYear);
       }
+         
+        //Always show the widget in the dropdownlist
+	public static boolean isSuitable(Cls cls, Slot slot, Facet facet) { 
+           return true;
+	}
       
       //A Protege main methord to allow easy debuging
       public static void main(String[] args) {
