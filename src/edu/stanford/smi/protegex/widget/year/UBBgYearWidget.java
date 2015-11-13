@@ -56,8 +56,10 @@ public class UBBgYearWidget extends NumberFieldWidget{
          s.append("<html>")
                  .append("<strong>")
                  .append(INVALID_GYEAR_MSG)
-                 .append(inputString)
                  .append("</strong>")
+                 .append("\"")
+                 .append(inputString)
+                 .append("\"")
           .append("</html>");
 
          return s.toString();
